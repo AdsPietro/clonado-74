@@ -26,12 +26,14 @@ import { useEnergyBills } from './hooks/useEnergyBills';
 import { useWaterBills } from './hooks/useWaterBills';
 import { useConfirmationModal } from './components/UI/ConfirmationModal';
 import { useEnhancedToast } from './components/UI/EnhancedToast';
+import { AlertManager } from './components/Alerts/AlertManager';
 import { useSyncManager } from './hooks/useSyncManager';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { testConnection } from './lib/supabaseClient';
 import { calculateFinancialSummary } from './utils/calculations';
+import { generateAutomaticAlerts } from './utils/alerts';
 import { importBackup, downloadBackup } from './utils/backup';
-import { Property, Tenant, Transaction, Document, EnergyBill, WaterBill } from './types';
+import { Property, Tenant, Transaction, Document, EnergyBill, WaterBill, Alert } from './types';
 import { Informor } from './types/informor';
 import { useState } from 'react';
 
@@ -50,6 +52,7 @@ function AppContent() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [supabaseAvailable, setSupabaseAvailable] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
   
   const { showConfirmation, ConfirmationModalComponent } = useConfirmationModal();
   const toast = useEnhancedToast();
@@ -134,6 +137,35 @@ function AppContent() {
   } = useWaterBills(supabaseAvailable);
   
   const financialSummary = calculateFinancialSummary(properties, transactions);
+
+  // Gerar alertas automaticamente quando dados mudarem
+  React.useEffect(() => {
+    const newAlerts = generateAutomaticAlerts(
+      properties,
+      tenants,
+      transactions,
+      energyBills,
+      waterBills
+    );
+
+    // Preservar status 'resolved' de alertas existentes
+    const updatedAlerts = newAlerts.map(newAlert => {
+      const existingAlert = alerts.find(a => a.id === newAlert.id);
+      return existingAlert ? { ...newAlert, resolved: existingAlert.resolved } : newAlert;
+    });
+
+    setAlerts(updatedAlerts);
+  }, [properties, tenants, transactions, energyBills, waterBills]);
+
+  const handleResolveAlert = (id: string) => {
+    setAlerts(prev => prev.map(alert => 
+      alert.id === id ? { ...alert, resolved: true } : alert
+    ));
+  };
+
+  const handleDeleteAlert = (id: string) => {
+    setAlerts(prev => prev.filter(alert => alert.id !== id));
+  };
 
   const handleToggleFinancialValues = () => {
     setShowFinancialValues(prev => !prev);
@@ -318,6 +350,14 @@ function AppContent() {
                 />
               } />
               <Route path="/informors" element={<InformorsManager />} />
+              <Route path="/alerts" element={
+                <AlertManager 
+                  alerts={alerts}
+                  properties={properties}
+                  onResolveAlert={handleResolveAlert}
+                  onDeleteAlert={handleDeleteAlert}
+                />
+              } />
               <Route path="/activation" element={<ActivationForm />} />
             </Routes>
           </div>
