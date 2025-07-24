@@ -147,7 +147,7 @@ export const useConfirmationModal = (): UseConfirmationModalReturn => {
       isOpen: true,
       title: options.title,
       message: options.message,
-      onConfirm: options.onConfirm,
+      onConfirm: options.onConfirm || (() => {}),
       confirmText: options.confirmText || 'Confirmar',
       cancelText: options.cancelText || 'Cancelar',
       type: options.type || 'danger',

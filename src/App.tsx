@@ -30,7 +30,7 @@ import { useSyncManager } from './hooks/useSyncManager';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { testConnection } from './lib/supabaseClient';
 import { calculateFinancialSummary } from './utils/calculations';
-import { importBackup } from './utils/backup';
+import { importBackup, downloadBackup } from './utils/backup';
 import { Property, Tenant, Transaction, Document, EnergyBill, WaterBill } from './types';
 import { Informor } from './types/informor';
 import { useState } from 'react';
@@ -144,8 +144,6 @@ function AppContent() {
   };
 
   const handleExport = () => {
-    // TODO: Implement export functionality
-    const { downloadBackup } = require('./utils/backup');
     downloadBackup();
     toast.success('Backup exportado com sucesso!');
   };
